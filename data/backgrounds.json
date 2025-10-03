@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "entries": [
+    { "id": "wanderer", "type": "background", "name": "Wanderer", "desc": "Seen a lot of roads." },
+    { "id": "hemophobia", "type": "disadvantage", "name": "Hemophobia", "desc": "Blood freaks you out." }
+  ]
+}
