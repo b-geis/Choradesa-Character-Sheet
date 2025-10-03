@@ -56,6 +56,11 @@
     /* Three buttons area */
     .main-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px}
 
+    /* Docs list */
+    .doclist{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+    .docitem{padding:12px;border-radius:12px;border:1px solid #28334b;background:#111827}
+    .doccontent{white-space:pre-wrap;background:#0e141e;border:1px solid #24314a;border-radius:12px;padding:12px;max-height:340px;overflow:auto}
+
     @media (max-width:520px){
       .wrap{padding:14px}
     }
@@ -80,20 +85,23 @@
         <div class="cta-grid">
           <button class="btn primary" id="newCharacterBtn">New Character</button>
           <button class="btn" id="homeImportBtn">Import Character (JSON)</button>
+          <button class="btn" id="homeDocsBtn">Info Documents</button>
         </div>
       </div>
+
       <div class="spacer"></div>
+
       <div class="grid">
         <div class="tile card">
-          <h3>About</h3>
-          <p class="muted">This is a static web app designed to be hosted on GitHub Pages and linked from World Anvil. Exports and imports are portable JSON files.</p>
+          <h3>Project notes</h3>
+          <p class="muted">Add <code>data/docs_manifest.json</code> to list docs in your <code>docs/</code> folder. Use this to store rules/notes as you go.</p>
         </div>
         <div class="tile card">
           <h3>Tips</h3>
           <ul class="muted">
-            <li>Export after big changes.</li>
-            <li>Keep JSON in a cloud folder if you swap devices.</li>
-            <li>Use desktop for long sessions; mobile works for quick edits.</li>
+            <li>Start small. You can change schemas later.</li>
+            <li>IDs stay stable; names can change.</li>
+            <li>Export often. Keep JSON in cloud storage if you swap devices.</li>
           </ul>
         </div>
       </div>
@@ -109,17 +117,21 @@
           </div>
         </div>
         <div class="main-actions">
-          <button class="btn primary" id="btnCharacter">Character Information</button>
-          <button class="btn primary" id="btnTraining">Training Information</button>
-          <button class="btn primary" id="btnCombat">Combat Screen</button>
+          <button class="btn primary" id="btnCharacter">Passport</button>
+          <button class="btn primary" id="btnTraining">Training</button>
+          <button class="btn primary" id="btnCombat">Combat</button>
+          <button class="btn" id="btnDocs">Rules / Docs</button>
+          <button class="btn" id="btnBookmarks" title="Quick links to perk trees (later)">Bookmarks</button>
         </div>
-        <p class="legend">Use these to navigate. You can come back here anytime.</p>
+        <div class="spacer"></div>
+        <div id="summary" class="grid"></div>
+        <p class="legend">This summary shows only the essentials: identity, lineage, attributes, skills with differing specializations, and top perk trees.</p>
       </div>
     </div>
 
     <div id="view-character" class="view">
       <div class="card panel">
-        <h2 style="margin-top:0">Character Information</h2>
+        <h2 style="margin-top:0">Passport</h2>
         <div class="row">
           <div style="flex:1;min-width:220px">
             <label for="name">Name</label>
@@ -143,8 +155,8 @@
 
     <div id="view-training" class="view">
       <div class="card">
-        <h2 style="margin-top:0">Training Information</h2>
-        <p class="muted">Placeholder. We will wire your real training/skill-tree here later.</p>
+        <h2 style="margin-top:0">Training</h2>
+        <p class="muted">Placeholder. We'll wire this after the Home & Summary are set.</p>
         <div class="row">
           <button class="btn ghost" id="backToMainFromTraining">Back</button>
         </div>
@@ -153,29 +165,56 @@
 
     <div id="view-combat" class="view">
       <div class="card">
-        <h2 style="margin-top:0">Combat Screen</h2>
-        <p class="muted">Placeholder. Define stats/rolls/trackers you need; we’ll implement them next.</p>
+        <h2 style="margin-top:0">Combat</h2>
+        <p class="muted">Placeholder. We'll design this after Training.</p>
         <div class="row">
           <button class="btn ghost" id="backToMainFromCombat">Back</button>
         </div>
       </div>
     </div>
 
-    <div class="footer">v0.1 MVP • JSON Export/Import only • No accounts • Static hosting ready</div>
+    <div id="view-docs" class="view">
+      <div class="card">
+        <h2 style="margin-top:0">Rules / Docs</h2>
+        <div id="docsStatus" class="muted" style="margin-bottom:8px"></div>
+        <div class="doclist" id="docList"></div>
+        <div id="docViewer" class="doccontent" style="display:none;margin-top:12px"></div>
+        <div class="row" style="margin-top:10px"><button class="btn ghost" id="backToHomeFromDocs">Back</button></div>
+      </div>
+    </div>
+
+    <div class="footer">v0.3 • Home + Summary + Docs • JSON Export/Import • Static data-driven</div>
   </div>
 
   <script>
+    // ===== Data loading =====
+    let DATA = { attributes:null, skills:null, lineages:null, trees:null, docs:null };
+    async function loadJSON(path){ const r = await fetch(path); if(!r.ok) throw new Error(path+': '+r.status); return r.json(); }
+    async function loadText(path){ const r = await fetch(path); if(!r.ok) throw new Error(path+': '+r.status); return r.text(); }
+    async function loadData(){
+      const promises = [
+        loadJSON('data/attributes.json').then(v=>DATA.attributes=v).catch(()=>DATA.attributes=null),
+        loadJSON('data/skills.json').then(v=>DATA.skills=v).catch(()=>DATA.skills=null),
+        loadJSON('data/lineages.json').then(v=>DATA.lineages=v).catch(()=>DATA.lineages=null),
+        loadJSON('data/trees.json').then(v=>DATA.trees=v).catch(()=>DATA.trees=null),
+        loadJSON('data/docs_manifest.json').then(v=>DATA.docs=v).catch(()=>DATA.docs=null)
+      ];
+      await Promise.all(promises);
+    }
+
     // ===== Minimal state & routing =====
     const VERSION = 1;
     const defaultCharacter = () => ({
       version: VERSION,
-      name: "New Character",
-      archetype: "",
-      notes: "",
-      // space reserved for later modules
-      training: { purchased: [], pointsAvailable: 0 },
-      combat: { hp: 0, resources: {} },
-      meta: { createdAt: new Date().toISOString() }
+      identity: { name: 'New Character', lineageId: 'human', backgroundIds: [], disadvantageIds: [] },
+      archetype: '',
+      notes: '',
+      attributes: { st:10, iq:10, dx:10, ht:10, will:10, per:10 },
+      skills: {},
+      specializations: {},
+      perks: [],
+      trees: {},
+      meta: { createdAt: new Date().toISOString(), notes:'' }
     });
 
     let current = null; // active character in memory
@@ -185,14 +224,16 @@
       main: document.getElementById('view-main'),
       character: document.getElementById('view-character'),
       training: document.getElementById('view-training'),
-      combat: document.getElementById('view-combat')
+      combat: document.getElementById('view-combat'),
+      docs: document.getElementById('view-docs')
     };
 
     function show(id){
       Object.values(views).forEach(v=>v.classList.remove('active'));
       views[id].classList.add('active');
-      if(id==='main') updateMainBadges();
+      if(id==='main'){ updateMainBadges(); renderSummary(); }
       if(id==='character') loadCharacterForm();
+      if(id==='docs') loadDocs();
     }
 
     // ---- Home actions ----
@@ -202,11 +243,13 @@
       show('main');
     };
     document.getElementById('homeImportBtn').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('homeDocsBtn').onclick = () => { location.hash = '#/docs'; show('docs'); };
 
     // ---- Main actions ----
     document.getElementById('btnCharacter').onclick = ()=>{ show('character'); };
     document.getElementById('btnTraining').onclick = ()=>{ show('training'); };
     document.getElementById('btnCombat').onclick = ()=>{ show('combat'); };
+    document.getElementById('btnDocs').onclick = ()=>{ show('docs'); };
 
     // ---- Character form ----
     const nameInput = document.getElementById('name');
@@ -214,13 +257,13 @@
     const notesInput = document.getElementById('notes');
     function loadCharacterForm(){
       if(!current) return;
-      nameInput.value = current.name || '';
+      nameInput.value = current.identity?.name || '';
       archInput.value = current.archetype || '';
       notesInput.value = current.notes || '';
     }
     document.getElementById('saveCharacterBtn').onclick = () => {
       if(!current) return;
-      current.name = nameInput.value.trim() || 'Unnamed';
+      current.identity.name = nameInput.value.trim() || 'Unnamed';
       current.archetype = archInput.value.trim();
       current.notes = notesInput.value.trim();
       updateMainBadges();
@@ -232,12 +275,142 @@
     document.getElementById('backToMainFromTraining').onclick = ()=> show('main');
     document.getElementById('backToMainFromCombat').onclick = ()=> show('main');
 
+    // ---- Docs view ----
+    const docsStatus = document.getElementById('docsStatus');
+    const docList = document.getElementById('docList');
+    const docViewer = document.getElementById('docViewer');
+
+    async function loadDocs(){
+      docList.innerHTML = '';
+      docViewer.style.display = 'none';
+      docViewer.textContent = '';
+      if(!DATA.docs){
+        docsStatus.innerHTML = 'No manifest found. Create <code>data/docs_manifest.json</code> and a <code>docs/</code> folder.';
+        return;
+      }
+      docsStatus.textContent = 'Select a document to open:';
+      DATA.docs.docs.forEach(d => {
+        const item = document.createElement('div');
+        item.className = 'docitem';
+        const h = document.createElement('div'); h.style.fontWeight='700'; h.textContent = d.title || d.id;
+        const p = document.createElement('div'); p.className='muted'; p.textContent = d.path;
+        const open = document.createElement('button'); open.className='btn'; open.textContent='Open';
+        open.onclick = async () => {
+          docViewer.style.display = 'block';
+          docViewer.textContent = 'Loading…';
+          try{ const text = await loadText(d.path); docViewer.textContent = text; }
+          catch(err){ docViewer.textContent = 'Failed to load: ' + err.message; }
+        };
+        item.append(h,p,open);
+        docList.appendChild(item);
+      });
+    }
+
     // ---- Badges ----
     function updateMainBadges(){
-      document.getElementById('charTitle').textContent = current ? `Character – ${current.name}` : 'Character';
-      document.getElementById('badgeName').textContent = current?.name || '—';
+      document.getElementById('charTitle').textContent = current ? `Character – ${current.identity?.name||''}` : 'Character';
+      document.getElementById('badgeName').textContent = current?.identity?.name || '—';
       document.getElementById('badgeArch').textContent = current?.archetype || '—';
     }
+
+    // ---- Summary renderer (a–f) ----
+    const summaryEl = document.getElementById('summary');
+    function summaryTile(title, contentHTML){
+      const div = document.createElement('div');
+      div.className = 'tile card';
+      const h = document.createElement('h3'); h.textContent = title; h.style.marginTop='0';
+      const c = document.createElement('div'); c.innerHTML = contentHTML;
+      div.append(h,c); return div;
+    }
+
+    function renderSummary(){
+      summaryEl.innerHTML = '';
+      if(!current) return;
+
+      // a) Name + Backgrounds/Disadvantages
+      const bgs = (current.identity?.backgroundIds||[]).join(', ') || '<span class="muted">None</span>';
+      const dis = (current.identity?.disadvantageIds||[]).join(', ') || '<span class="muted">None</span>';
+      summaryEl.appendChild(summaryTile('Identity', `
+        <div><strong>Name:</strong> ${escapeHTML(current.identity?.name||'')}</div>
+        <div><strong>Backgrounds:</strong> ${bgs}</div>
+        <div><strong>Disadvantages:</strong> ${dis}</div>
+      `));
+
+      // b) Lineage
+      let lineageName = current.identity?.lineageId || 'human';
+      if(DATA.lineages){
+        const found = DATA.lineages.lineages.find(x=>x.id===lineageName);
+        if(found) lineageName = found.name;
+      }
+      summaryEl.appendChild(summaryTile('Lineage', `<div>${escapeHTML(lineageName)}</div>`));
+
+      // c) Attributes
+      const attrs = current.attributes || {};
+      let attrsHTML = '<ul class="muted">';
+      const order = DATA.attributes?.attributes?.map(a=>a.id) || Object.keys(attrs);
+      order.forEach(id=>{
+        if(id in attrs) attrsHTML += `<li><strong>${escapeHTML(id.toUpperCase())}</strong>: ${attrs[id]}</li>`;
+      });
+      attrsHTML += '</ul>';
+      summaryEl.appendChild(summaryTile('Attributes', attrsHTML));
+
+      // d) Core skills + differing specializations
+      const skillMap = current.skills || {};
+      const specMap = current.specializations || {};
+      const display = [];
+      const allSkills = DATA.skills?.skills || [];
+      allSkills.forEach(s=>{
+        const core = Number(skillMap[s.id]||0);
+        if(core>0){
+          const diffs = [];
+          (s.specializations||[]).forEach(sp=>{
+            const key = `${s.id}:${sp.id}`;
+            const extra = Number(specMap[key]||0);
+            if(extra!==0){
+              diffs.push(`${sp.name}: ${core+extra}`);
+            }
+          });
+          display.push({ name:s.name, core, diffs });
+        }
+      });
+      if(display.length===0){
+        summaryEl.appendChild(summaryTile('Skills', '<span class="muted">No skills invested yet.</span>'));
+      } else {
+        let html = '<ul>';
+        display.forEach(d=>{
+          html += `<li><strong>${escapeHTML(d.name)}</strong>: ${d.core}`;
+          if(d.diffs.length>0){ html += `<div class="muted">• ${d.diffs.join(' • ')}</div>`; }
+          html += '</li>';
+        });
+        html += '</ul>';
+        summaryEl.appendChild(summaryTile('Skills (only specializations that differ)', html));
+      }
+
+      // e) Top 5 trees by pointsSpent
+      const trees = current.trees || {};
+      const entries = Object.entries(trees).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      if(entries.length===0){
+        summaryEl.appendChild(summaryTile('Top Perk Trees', '<span class="muted">No investments yet.</span>'));
+      } else {
+        let html = '<ol>';
+        entries.forEach(([id,pts])=>{
+          let name = id;
+          const t = DATA.trees?.trees?.find(x=>x.id===id);
+          if(t) name = t.name;
+          html += `<li><strong>${escapeHTML(name)}</strong>: ${pts} pts</li>`;
+        });
+        html += '</ol>';
+        summaryEl.appendChild(summaryTile('Top Perk Trees', html));
+      }
+
+      // f) Rules/Docs link hint
+      summaryEl.appendChild(summaryTile('Rules / Docs', `
+        <div>Open the Rules / Docs library for searchable references.</div>
+        <div style="margin-top:8px"><button class="btn" onclick="show('docs')">Open Docs</button></div>
+      `));
+    }
+
+    function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
 
     // ---- Export / Import ----
     document.getElementById('exportBtn').onclick = () => {
@@ -246,13 +419,14 @@
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `${(current.name||'character').replace(/[^a-z0-9-_]+/gi,'_')}-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+      a.download = `${(current.identity?.name||'character').replace(/[^a-z0-9-_]+/gi,'_')}-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
     };
 
     const fileInput = document.getElementById('fileInput');
     document.getElementById('importBtn').onclick = () => fileInput.click();
+    document.getElementById('homeImportBtn').onclick = () => fileInput.click();
     fileInput.onchange = (e) => {
       const f = e.target.files?.[0]; if(!f) return;
       const reader = new FileReader();
@@ -260,10 +434,8 @@
         try{
           const obj = JSON.parse(reader.result);
           if(obj && typeof obj==='object' && obj.version===VERSION){
-            current = obj; show('main'); updateMainBadges();
-          } else {
-            alert('Import failed: wrong or missing version.');
-          }
+            current = obj; location.hash = '#/main'; show('main');
+          } else { alert('Import failed: wrong or missing version.'); }
         }catch(err){ alert('Import failed: invalid JSON.'); }
         fileInput.value = '';
       };
@@ -273,6 +445,7 @@
     // ---- Hash routing ----
     function route(){
       const hash = location.hash || '#/';
+      if(hash.startsWith('#/docs')) return show('docs');
       if(hash.startsWith('#/main')) return show('main');
       if(hash.startsWith('#/character')) return show('character');
       if(hash.startsWith('#/training')) return show('training');
@@ -281,8 +454,8 @@
     }
     window.addEventListener('hashchange', route);
 
-    // Init
-    route();
+    // Init: load data then route
+    loadData().then(route).catch(()=>route());
   </script>
 </body>
 </html>
