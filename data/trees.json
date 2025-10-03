@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "trees": [
+    { "id": "grappling", "name": "Grappling", "desc": "Control and submissions." },
+    { "id": "stealth_ops", "name": "Stealth Ops", "desc": "Advanced stealth techniques." }
+  ]
+}
