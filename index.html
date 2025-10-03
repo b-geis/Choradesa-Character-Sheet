@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Character Builder – MVP</title>
+  <style>
+    :root{
+      --bg:#0f1115; --panel:#131721; --ink:#e7ebf3; --muted:#9aa4b2; --accent:#6ea8fe; --ok:#6bffb3; --no:#ff7a7a;
+      --radius:14px; --gap:12px;
+    }
+    * { box-sizing: border-box }
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b0d12,#0f1115);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Arial}
+    a{color:#9ec5ff;text-decoration:none}
+    .wrap{max-width:980px;margin:0 auto;padding:18px}
+
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 16px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
+    .brand .logo{width:26px;height:26px;border-radius:6px;background:#1b2334;border:1px solid #2a3651}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    .card{background:linear-gradient(180deg,#131721,#0f131b);border:1px solid #232b3c;border-radius:16px;padding:16px}
+    .muted{color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--gap)}
+
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid #2a3651;background:#141a28;color:var(--ink);cursor:pointer}
+    .btn.primary{background:#1a2336;border-color:#2a3b5f}
+    .btn.ghost{background:transparent;border-color:#2a3651}
+    .btn.danger{background:#331a1a;border-color:#4a2424}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+
+    .cta-grid{display:grid;grid-template-columns:1fr;gap:10px}
+
+    .panel{display:flex;flex-direction:column;gap:12px}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    label{font-weight:600}
+    input[type="text"], select, textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #2a3651;background:#0f141f;color:var(--ink)}
+
+    .big-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px}
+    .big-choices .tile{padding:16px;border-radius:14px;border:1px solid #28334b;background:#111827;display:flex;flex-direction:column;gap:8px}
+    .tile h3{margin:0 0 6px 0}
+
+    .inline-badges{display:flex;gap:8px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:#1a2131;border:1px solid #2a3856;border-radius:999px;padding:6px 10px;color:var(--muted)}
+
+    .spacer{height:10px}
+    .legend{color:var(--muted);font-size:12px}
+    .footer{margin:18px 0;color:var(--muted)}
+
+    /* Simple views */
+    .view{display:none}
+    .view.active{display:block}
+
+    /* Three buttons area */
+    .main-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px}
+
+    @media (max-width:520px){
+      .wrap{padding:14px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><div class="logo"></div>Character Builder</div>
+      <div class="top-actions">
+        <button class="btn ghost" id="exportBtn" title="Export current character to JSON">Export</button>
+        <button class="btn ghost" id="importBtn" title="Import character JSON">Import</button>
+        <input type="file" id="fileInput" accept="application/json" style="display:none" />
+      </div>
+    </div>
+
+    <!-- Views -->
+    <div id="view-home" class="view active">
+      <div class="card">
+        <h2 style="margin-top:0">Welcome</h2>
+        <p class="muted">Create a new character or import one you saved earlier. No accounts required.</p>
+        <div class="cta-grid">
+          <button class="btn primary" id="newCharacterBtn">New Character</button>
+          <button class="btn" id="homeImportBtn">Import Character (JSON)</button>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="grid">
+        <div class="tile card">
+          <h3>About</h3>
+          <p class="muted">This is a static web app designed to be hosted on GitHub Pages and linked from World Anvil. Exports and imports are portable JSON files.</p>
+        </div>
+        <div class="tile card">
+          <h3>Tips</h3>
+          <ul class="muted">
+            <li>Export after big changes.</li>
+            <li>Keep JSON in a cloud folder if you swap devices.</li>
+            <li>Use desktop for long sessions; mobile works for quick edits.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-main" class="view">
+      <div class="card">
+        <div class="row">
+          <h2 style="margin:0;flex:1" id="charTitle">Character</h2>
+          <div class="inline-badges">
+            <span class="badge">Name: <strong id="badgeName">—</strong></span>
+            <span class="badge">Archetype: <strong id="badgeArch">—</strong></span>
+          </div>
+        </div>
+        <div class="main-actions">
+          <button class="btn primary" id="btnCharacter">Character Information</button>
+          <button class="btn primary" id="btnTraining">Training Information</button>
+          <button class="btn primary" id="btnCombat">Combat Screen</button>
+        </div>
+        <p class="legend">Use these to navigate. You can come back here anytime.</p>
+      </div>
+    </div>
+
+    <div id="view-character" class="view">
+      <div class="card panel">
+        <h2 style="margin-top:0">Character Information</h2>
+        <div class="row">
+          <div style="flex:1;min-width:220px">
+            <label for="name">Name</label>
+            <input id="name" type="text" placeholder="e.g., Kael Voss" />
+          </div>
+          <div style="flex:1;min-width:220px">
+            <label for="archetype">Archetype</label>
+            <input id="archetype" type="text" placeholder="e.g., Bladedancer" />
+          </div>
+        </div>
+        <div>
+          <label for="notes">Notes</label>
+          <textarea id="notes" rows="4" placeholder="Backstory, quirks, etc."></textarea>
+        </div>
+        <div class="row">
+          <button class="btn" id="saveCharacterBtn">Save Changes</button>
+          <button class="btn ghost" id="backToMainFromChar">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-training" class="view">
+      <div class="card">
+        <h2 style="margin-top:0">Training Information</h2>
+        <p class="muted">Placeholder. We will wire your real training/skill-tree here later.</p>
+        <div class="row">
+          <button class="btn ghost" id="backToMainFromTraining">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-combat" class="view">
+      <div class="card">
+        <h2 style="margin-top:0">Combat Screen</h2>
+        <p class="muted">Placeholder. Define stats/rolls/trackers you need; we’ll implement them next.</p>
+        <div class="row">
+          <button class="btn ghost" id="backToMainFromCombat">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">v0.1 MVP • JSON Export/Import only • No accounts • Static hosting ready</div>
+  </div>
+
+  <script>
+    // ===== Minimal state & routing =====
+    const VERSION = 1;
+    const defaultCharacter = () => ({
+      version: VERSION,
+      name: "New Character",
+      archetype: "",
+      notes: "",
+      // space reserved for later modules
+      training: { purchased: [], pointsAvailable: 0 },
+      combat: { hp: 0, resources: {} },
+      meta: { createdAt: new Date().toISOString() }
+    });
+
+    let current = null; // active character in memory
+
+    const views = {
+      home: document.getElementById('view-home'),
+      main: document.getElementById('view-main'),
+      character: document.getElementById('view-character'),
+      training: document.getElementById('view-training'),
+      combat: document.getElementById('view-combat')
+    };
+
+    function show(id){
+      Object.values(views).forEach(v=>v.classList.remove('active'));
+      views[id].classList.add('active');
+      if(id==='main') updateMainBadges();
+      if(id==='character') loadCharacterForm();
+    }
+
+    // ---- Home actions ----
+    document.getElementById('newCharacterBtn').onclick = () => {
+      current = defaultCharacter();
+      location.hash = '#/main';
+      show('main');
+    };
+    document.getElementById('homeImportBtn').onclick = () => document.getElementById('fileInput').click();
+
+    // ---- Main actions ----
+    document.getElementById('btnCharacter').onclick = ()=>{ show('character'); };
+    document.getElementById('btnTraining').onclick = ()=>{ show('training'); };
+    document.getElementById('btnCombat').onclick = ()=>{ show('combat'); };
+
+    // ---- Character form ----
+    const nameInput = document.getElementById('name');
+    const archInput = document.getElementById('archetype');
+    const notesInput = document.getElementById('notes');
+    function loadCharacterForm(){
+      if(!current) return;
+      nameInput.value = current.name || '';
+      archInput.value = current.archetype || '';
+      notesInput.value = current.notes || '';
+    }
+    document.getElementById('saveCharacterBtn').onclick = () => {
+      if(!current) return;
+      current.name = nameInput.value.trim() || 'Unnamed';
+      current.archetype = archInput.value.trim();
+      current.notes = notesInput.value.trim();
+      updateMainBadges();
+      alert('Saved.');
+    };
+    document.getElementById('backToMainFromChar').onclick = ()=> show('main');
+
+    // ---- Training / Combat back ----
+    document.getElementById('backToMainFromTraining').onclick = ()=> show('main');
+    document.getElementById('backToMainFromCombat').onclick = ()=> show('main');
+
+    // ---- Badges ----
+    function updateMainBadges(){
+      document.getElementById('charTitle').textContent = current ? `Character – ${current.name}` : 'Character';
+      document.getElementById('badgeName').textContent = current?.name || '—';
+      document.getElementById('badgeArch').textContent = current?.archetype || '—';
+    }
+
+    // ---- Export / Import ----
+    document.getElementById('exportBtn').onclick = () => {
+      if(!current){ alert('No character loaded.'); return; }
+      const data = { ...current, version: VERSION, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(current.name||'character').replace(/[^a-z0-9-_]+/gi,'_')}-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    };
+
+    const fileInput = document.getElementById('fileInput');
+    document.getElementById('importBtn').onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+      const f = e.target.files?.[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const obj = JSON.parse(reader.result);
+          if(obj && typeof obj==='object' && obj.version===VERSION){
+            current = obj; show('main'); updateMainBadges();
+          } else {
+            alert('Import failed: wrong or missing version.');
+          }
+        }catch(err){ alert('Import failed: invalid JSON.'); }
+        fileInput.value = '';
+      };
+      reader.readAsText(f);
+    };
+
+    // ---- Hash routing ----
+    function route(){
+      const hash = location.hash || '#/';
+      if(hash.startsWith('#/main')) return show('main');
+      if(hash.startsWith('#/character')) return show('character');
+      if(hash.startsWith('#/training')) return show('training');
+      if(hash.startsWith('#/combat')) return show('combat');
+      return show('home');
+    }
+    window.addEventListener('hashchange', route);
+
+    // Init
+    route();
+  </script>
+</body>
+</html>
