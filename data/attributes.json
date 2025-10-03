@@ -1,1 +1,11 @@
-INSERT ATTRIBUTES HERE
+{
+  "version": 1,
+  "attributes": [
+    { "id": "st", "name": "ST", "desc": "Strength", "min": 8, "max": 16 },
+    { "id": "iq", "name": "IQ", "desc": "Intelligence", "min": 8, "max": 12 },
+    { "id": "dx", "name": "DX", "desc": "Dexterity", "min": 8, "max": 12 },
+    { "id": "ht", "name": "HT", "desc": "Health/Toughness", "min": 8, "max": 14 },
+    { "id": "will", "name": "Will", "desc": "Resolve", "min": 8, "max": 14 },
+    { "id": "per", "name": "Per", "desc": "Perception", "min": 8, "max": 14 }
+  ]
+}
