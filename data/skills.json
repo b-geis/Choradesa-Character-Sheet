@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "stealth",
+      "name": "Stealth",
+      "attribute": "dx",
+      "baseCap": 10,
+      "extendedCap": { "amount": 20, "unlockedByPerk": "stealth:deep_shadows" },
+      "specializations": [
+        { "id": "shadowing", "name": "Shadowing" },
+        { "id": "disguise", "name": "Disguise/Camouflage" },
+        { "id": "holdout", "name": "Holdout" }
+      ],
+      "perks": [
+        {
+          "id": "deep_shadows",
+          "name": "Deep Shadows",
+          "desc": "After investing 10 points in Stealth, you may invest up to 10 more.",
+          "requires": { "skillId": "stealth", "points": 10 }
+        }
+      ],
+      "desc": "Move unseen and unheard."
+    },
+    {
+      "id": "insight",
+      "name": "Insight",
+      "attribute": "per",
+      "baseCap": 10,
+      "specializations": [
+        { "id": "empathy", "name": "Empathy" },
+        { "id": "detect_lies", "name": "Detect Lies" },
+        { "id": "observation", "name": "Observation" }
+      ],
+      "perks": [],
+      "desc": "Read people and situations."
+    },
+    {
+      "id": "sleight",
+      "name": "Sleight of Hand",
+      "attribute": "dx",
+      "baseCap": 10,
+      "specializations": [
+        { "id": "lockpicking", "name": "Lockpicking" },
+        { "id": "pickpocketing", "name": "Pickpocketing" },
+        { "id": "fast_draw", "name": "Fast-Draw" },
+        { "id": "tailoring", "name": "Tailoring" }
+      ],
+      "perks": [],
+      "desc": "Fine manipulation under pressure."
+    }
+  ],
+  "defaults": {
+    "specLevelFormula": "skillPoints + specPoints" 
+  }
+}
