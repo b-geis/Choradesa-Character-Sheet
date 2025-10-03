@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "home": { "showDocs": true, "showContinue": false },
+  "summary": {
+    "sections": ["identity", "lineage", "attributes", "skillsDiff", "topTrees"]
+  },
+  "bookmarksEnabled": true
+}
