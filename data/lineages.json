@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "lineages": [
+    { "id": "human", "name": "Human", "desc": "Baseline." }
+  ]
+}
