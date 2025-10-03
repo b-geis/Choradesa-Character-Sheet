@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "docs": [
+    { "id": "overview",  "title": "Overview",  "path": "docs/overview.md" },
+    { "id": "grappling", "title": "Grappling Rules", "path": "docs/grappling.md" }
+  ]
+}
