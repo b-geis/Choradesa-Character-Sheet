@@ -1,6 +1,17 @@
 {
   "version": 1,
   "lineages": [
-    { "id": "human", "name": "Human", "desc": "Baseline." }
+    {
+      "id": "human",
+      "name": "Human",
+      "desc": "Baseline.",
+      "traits": ["Versatile learner", "Bonus starting contacts"]
+    },
+    {
+      "id": "half_elf",
+      "name": "Half-Elf",
+      "desc": "Bridging two worlds.",
+      "traits": ["Low-light vision", "Keen hearing"]
+    }
   ]
 }
