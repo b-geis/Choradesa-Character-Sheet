@@ -1,17 +1,20 @@
 {
   "version": 1,
   "skills": [
+   {
+  "id": "unarmed",
+  "name": "Unarmed",
+  "attribute": "dx",
+  "default": { "formula": "dx - 3" },
+  "specializations": [
     {
-      "id": "unarmed",
-      "name": "Unarmed",
-      "attribute": "dx",
-      "default": { "formula": "dx - 3" },
-      "specializations": [
-        {
-          "id": "brawling",
-          "name": "Brawling",
-          "minFrom": { "formula": "dx" }
-        }
+      "id": "brawling",
+      "name": "Brawling",
+      "defaultFromCoreDelta": 3
+    }
+  ],
+  "desc": "Strikes, blocks, and grapples without weapons."
+}
       ],
       "desc": "Strikes, blocks, and grapples without weapons."
     },
