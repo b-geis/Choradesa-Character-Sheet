@@ -78,6 +78,28 @@
     </div>
 
     <!-- Views -->
+    <!-- PAGE: Inventory (simple placeholder for now) -->
+<div id="view-inventory" class="view">
+  <div class="card">
+    <h2 style="margin-top:0">Inventory</h2>
+    <div id="invCurrencies" class="muted">Currencies will list here.</div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" onclick="show('main')">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: Spellbook (placeholder) -->
+<div id="view-spellbook" class="view">
+  <div class="card">
+    <h2 style="margin-top:0">Spellbook</h2>
+    <p class="muted">Known spells will appear here later.</p>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" onclick="show('main')">Back</button>
+    </div>
+  </div>
+</div>
+
     <div id="view-home" class="view active">
       <div class="card">
         <h2 style="margin-top:0">Welcome</h2>
@@ -117,6 +139,9 @@
           </div>
         </div>
         <div class="main-actions">
+          <!-- PAGE: Main — SECTION: Nav Buttons -->
+          <button class="btn" id="btnInventory">Inventory</button>
+          <button class="btn" id="btnSpellbook">Spellbook</button>
           <button class="btn primary" id="btnCharacter">Passport</button>
           <button class="btn primary" id="btnTraining">Training</button>
           <button class="btn primary" id="btnCombat">Combat</button>
@@ -188,11 +213,15 @@
 
   <script>
     // ===== Data loading =====
-    let DATA = { attributes:null, skills:null, lineages:null, trees:null, docs:null };
+    let DATA = { attributes:null, skills:null, lineages:null, trees:null, docs:null, currencies:null };
     async function loadJSON(path){ const r = await fetch(path); if(!r.ok) throw new Error(path+': '+r.status); return r.json(); }
     async function loadText(path){ const r = await fetch(path); if(!r.ok) throw new Error(path+': '+r.status); return r.text(); }
     async function loadData(){
       const promises = [
+        // DATA: add currencies holder
+        // DATA: include currencies in the loader Promise.all
+// (ADD this as another line inside your Promise.all)
+        loadJSON('data/currencies.json').then(v=>DATA.currencies=v).catch(()=>DATA.currencies=null);
         loadJSON('data/attributes.json').then(v=>DATA.attributes=v).catch(()=>DATA.attributes=null),
         loadJSON('data/skills.json').then(v=>DATA.skills=v).catch(()=>DATA.skills=null),
         loadJSON('data/lineages.json').then(v=>DATA.lineages=v).catch(()=>DATA.lineages=null),
@@ -204,22 +233,28 @@
 
     // ===== Minimal state & routing =====
     const VERSION = 1;
-    const defaultCharacter = () => ({
-      version: VERSION,
-      identity: { name: 'New Character', lineageId: 'human', backgroundIds: [], disadvantageIds: [] },
-      archetype: '',
-      notes: '',
-      attributes: { st:10, iq:10, dx:10, ht:10, will:10, per:10 },
-      skills: {},
-      specializations: {},
-      perks: [],
-      trees: {},
-      meta: { createdAt: new Date().toISOString(), notes:'' }
-    });
+    const defaultCharacter = () => (
+      // MODEL: character save shape (add wallet)
+return {
+  version: VERSION,
+  identity: { name: 'New Character', lineageId: 'human', backgroundIds: [], disadvantageIds: [] },
+  archetype: '',
+  notes: '',
+  attributes: { st:10, iq:10, dx:10, ht:10, will:10, per:10 },
+  skills: {},
+  specializations: {},
+  perks: [],
+  trees: {},
+  wallet: {},              // <-- NEW
+  meta: { createdAt: new Date().toISOString(), notes:'' }
+};
 
     let current = null; // active character in memory
 
     const views = {
+      // ROUTING: register new views
+      inventory: document.getElementById('view-inventory'),
+      spellbook: document.getElementById('view-spellbook'),
       home: document.getElementById('view-home'),
       main: document.getElementById('view-main'),
       character: document.getElementById('view-character'),
@@ -234,6 +269,9 @@
       if(id==='main'){ updateMainBadges(); renderSummary(); }
       if(id==='character') loadCharacterForm();
       if(id==='docs') loadDocs();
+      if (id === 'inventory') renderInventory();
+      if (id === 'spellbook') {/* later */}
+
     }
 
     // ---- Home actions ----
@@ -246,6 +284,9 @@
     document.getElementById('homeDocsBtn').onclick = () => { location.hash = '#/docs'; show('docs'); };
 
     // ---- Main actions ----
+    // PAGE: Main — SECTION: Nav Buttons (Inventory/Spellbook)
+    document.getElementById('btnInventory').onclick = ()=> { show('inventory'); };
+    document.getElementById('btnSpellbook').onclick = ()=> { show('spellbook'); };
     document.getElementById('btnCharacter').onclick = ()=>{ show('character'); };
     document.getElementById('btnTraining').onclick = ()=>{ show('training'); };
     document.getElementById('btnCombat').onclick = ()=>{ show('combat'); };
@@ -344,6 +385,17 @@
       }
       summaryEl.appendChild(summaryTile('Lineage', `<div>${escapeHTML(lineageName)}</div>`));
 
+      // PAGE: Main — SECTION: Lineage Traits (ADD THIS AFTER THE LINEAGE TILE)
+if (DATA.lineages) {
+  const lid = current.identity?.lineageId || 'human';
+  const lin = DATA.lineages.lineages.find(x => x.id === lid);
+  if (lin && Array.isArray(lin.traits) && lin.traits.length) {
+    const list = '<ul>' + lin.traits.map(t => `<li>${escapeHTML(t)}</li>`).join('') + '</ul>';
+    summaryEl.appendChild(summaryTile('Lineage Traits', list));
+  }
+}
+
+      
       // c) Attributes
       const attrs = current.attributes || {};
       let attrsHTML = '<ul class="muted">';
@@ -355,37 +407,78 @@
       summaryEl.appendChild(summaryTile('Attributes', attrsHTML));
 
       // d) Core skills + differing specializations
-      const skillMap = current.skills || {};
-      const specMap = current.specializations || {};
-      const display = [];
-      const allSkills = DATA.skills?.skills || [];
-      allSkills.forEach(s=>{
-        const core = Number(skillMap[s.id]||0);
-        if(core>0){
-          const diffs = [];
-          (s.specializations||[]).forEach(sp=>{
-            const key = `${s.id}:${sp.id}`;
-            const extra = Number(specMap[key]||0);
-            if(extra!==0){
-              diffs.push(`${sp.name}: ${core+extra}`);
-            }
-          });
-          display.push({ name:s.name, core, diffs });
-        }
-      });
-      if(display.length===0){
-        summaryEl.appendChild(summaryTile('Skills', '<span class="muted">No skills invested yet.</span>'));
-      } else {
-        let html = '<ul>';
-        display.forEach(d=>{
-          html += `<li><strong>${escapeHTML(d.name)}</strong>: ${d.core}`;
-          if(d.diffs.length>0){ html += `<div class="muted">• ${d.diffs.join(' • ')}</div>`; }
-          html += '</li>';
-        });
-        html += '</ul>';
-        summaryEl.appendChild(summaryTile('Skills (only specializations that differ)', html));
-      }
+// PAGE: Main — SECTION: Skills Summary (always show core; specs only if different)
+(function renderSkills() {
+  const allSkills = DATA.skills?.skills || [];
+  const attrs = current.attributes || {};
+  const skillPts = current.skills || {};
+  const specPts = current.specializations || {};
 
+  // helper: evaluate default "dx - 3" against attrs
+  function evalDefault(formula) {
+    if (!formula) return 0;
+    const m = /([a-z]+)\s*([+-])\s*(\d+)/i.exec(formula);
+    if (!m) return 0;
+    const base = attrs[m[1].toLowerCase()] ?? 0;
+    const sign = m[2] === '-' ? -1 : 1;
+    const n = parseInt(m[3], 10) || 0;
+    return base + sign * n;
+  }
+
+  let html = '<ul>';
+  allSkills.forEach(s => {
+    const coreDefault = s.default ? evalDefault(s.default.formula) : 0;
+    const coreLevel = (Number(skillPts[s.id] || 0)) + coreDefault;
+
+    html += `<li><strong>${escapeHTML(s.name)}</strong>: ${coreLevel}`;
+
+    // specs that differ: either spec points ≠ 0 OR an explicit defaultFromCoreDelta pushes it
+    const diffs = [];
+    (s.specializations || []).forEach(sp => {
+      const key = `${s.id}:${sp.id}`;
+      const delta = Number(specPts[key] || 0);
+      const bump = Number(sp.defaultFromCoreDelta || 0);
+      const specLevel = coreLevel + bump + delta;
+      if (bump !== 0 || delta !== 0) {
+        diffs.push(`${sp.name}: ${specLevel}`);
+      }
+    });
+
+    if (diffs.length > 0) {
+      html += `<div class="muted">• ${diffs.join(' • ')}</div>`;
+    }
+    html += '</li>';
+  });
+  html += '</ul>';
+
+  summaryEl.appendChild(summaryTile('Skills (core always; specs only if different)', html));
+})();
+
+// PAGE: Inventory — SECTION: Render
+function renderInventory() {
+  const wrap = document.getElementById('invCurrencies');
+  if (!wrap) return;
+  if (!DATA.currencies) { wrap.textContent = 'Define data/currencies.json to track money/resources.'; return; }
+
+  const wallet = current?.wallet || {};
+  const fiat = DATA.currencies.fiat || [];
+  const res  = DATA.currencies.resources || [];
+  let html = '<h3>Wallet</h3>';
+
+  if (fiat.length) {
+    html += '<div><strong>Fiat</strong></div><ul>';
+    fiat.forEach(c => { html += `<li>${escapeHTML(c.name)}: ${wallet[c.id] || 0}</li>`; });
+    html += '</ul>';
+  }
+  if (res.length) {
+    html += '<div><strong>Resources</strong></div><ul>';
+    res.forEach(c => { html += `<li>${escapeHTML(c.name)}: ${wallet[c.id] || 0}</li>`; });
+    html += '</ul>';
+  }
+  wrap.innerHTML = html;
+}
+
+      
       // e) Top 5 trees by pointsSpent
       const trees = current.trees || {};
       const entries = Object.entries(trees).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -403,6 +496,28 @@
         summaryEl.appendChild(summaryTile('Top Perk Trees', html));
       }
 
+// PAGE: Main — SECTION: Currencies Summary
+(function renderCurrencies() {
+  if (!DATA.currencies) return;
+  const wallet = current.wallet || {};
+  const fiat = DATA.currencies.fiat || [];
+  const res  = DATA.currencies.resources || [];
+
+  let html = '';
+  if (fiat.length) {
+    html += '<div><strong>Fiat</strong></div><ul>';
+    fiat.forEach(c => { html += `<li>${escapeHTML(c.name)}: ${wallet[c.id] || 0}</li>`; });
+    html += '</ul>';
+  }
+  if (res.length) {
+    html += '<div><strong>Resources</strong></div><ul>';
+    res.forEach(c => { html += `<li>${escapeHTML(c.name)}: ${wallet[c.id] || 0}</li>`; });
+    html += '</ul>';
+  }
+  summaryEl.appendChild(summaryTile('Currencies', html || '<span class="muted">None tracked yet.</span>'));
+})(  );
+
+      
       // f) Rules/Docs link hint
       summaryEl.appendChild(summaryTile('Rules / Docs', `
         <div>Open the Rules / Docs library for searchable references.</div>
@@ -445,6 +560,8 @@
     // ---- Hash routing ----
     function route(){
       const hash = location.hash || '#/';
+      if (hash.startsWith('#/inventory')) return show('inventory');
+      if (hash.startsWith('#/spellbook')) return show('spellbook');
       if(hash.startsWith('#/docs')) return show('docs');
       if(hash.startsWith('#/main')) return show('main');
       if(hash.startsWith('#/character')) return show('character');
