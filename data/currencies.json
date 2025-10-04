@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "fiat": [
+    { "id": "copper",   "name": "Copper",   "unitValue": 1 },
+    { "id": "silver",   "name": "Silver",   "unitValue": 10 },
+    { "id": "gold",     "name": "Gold",     "unitValue": 100 },
+    { "id": "platinum", "name": "Platinum", "unitValue": 1000 }
+  ],
+  "resources": [
+    { "id": "chp",           "name": "Character Points" },
+    { "id": "worship_hours", "name": "Worship Hours" },
+    { "id": "craft_hours",   "name": "Crafting Hours" }
+  ]
+}
