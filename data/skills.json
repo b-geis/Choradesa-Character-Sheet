@@ -2,6 +2,21 @@
   "version": 1,
   "skills": [
     {
+      "id": "unarmed",
+      "name": "Unarmed",
+      "attribute": "dx",
+      "default": { "formula": "dx - 3" },
+      "specializations": [
+        {
+          "id": "brawling",
+          "name": "Brawling",
+          "minFrom": { "formula": "dx" }
+        }
+      ],
+      "desc": "Strikes, blocks, and grapples without weapons."
+    },
+
+    {
       "id": "stealth",
       "name": "Stealth",
       "attribute": "dx",
